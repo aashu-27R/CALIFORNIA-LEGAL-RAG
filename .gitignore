@@ -6,4 +6,7 @@ __pycache__/
 .DS_Store
 data/raw/
 data/processed/
+data/corpus/
+data/chunks/
+data/chroma/
 *.log
