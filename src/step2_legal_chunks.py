@@ -199,6 +199,7 @@ def make_chunk_record(
         "doc_type": doc.get("doc_type"),
         "rel_path": rel,
         "source_label": label,
+        "article": anchors.get("article"),
         "anchors": anchors,          # per-chunk anchors
         "chunk_index": idx,
         "start_char": start,

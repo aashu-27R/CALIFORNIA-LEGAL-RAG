@@ -44,6 +44,7 @@ def to_metadata(doc: Dict[str, Any]) -> Dict[str, Any]:
         "start_char": doc.get("start_char"),
         "end_char": doc.get("end_char"),
         "edcode_section": edcode_section,
+        "article": doc.get("article"),
         "anchors_json": json.dumps(anchors, ensure_ascii=False),
     }
 

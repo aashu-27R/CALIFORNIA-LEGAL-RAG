@@ -29,6 +29,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--doc-type", default=None, help="Filter: ca_constitution or ca_education_code")
     parser.add_argument("--edcode-section", default=None, help="Filter by Education Code section number (e.g., 48900)")
+    parser.add_argument("--article", default=None, help="Filter by Constitution article (e.g., IX)")
     parser.add_argument(
         "--must-contain",
         default=None,
@@ -55,6 +56,8 @@ def main() -> None:
         where_clauses.append({"doc_type": args.doc_type})
     if args.edcode_section:
         where_clauses.append({"edcode_section": str(args.edcode_section)})
+    if args.article:
+        where_clauses.append({"article": str(args.article).upper()})
 
     if not where_clauses:
         where = None
