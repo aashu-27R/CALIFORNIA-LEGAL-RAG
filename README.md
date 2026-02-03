@@ -37,6 +37,20 @@ Update the root path in `src/step1_build_corpus.py`:
 ROOT_FOLDER = Path("/path/to/california_dataset")
 ```
 
+## Dataset
+
+The dataset is hosted on Google Drive:
+```
+https://drive.google.com/drive/folders/1Lv-H1qTTgoDB7zDV4Go49OdfEPdytfTm?usp=sharing
+```
+
+Download the folder and place it locally as:
+```
+california_dataset/
+  california_constitution/
+  education_code/
+```
+
 ## Pipeline Steps
 
 ### Step 1 — Build corpus
