@@ -87,6 +87,31 @@ Then run:
 python src/step5_rag_answer.py --query "What does Article IX say about education?" --doc-type ca_constitution --article IX --top-k 5
 ```
 
+### Step 6 — Knowledge Graph (Neo4j)
+
+Set Neo4j env vars locally:
+
+```bash
+export NEO4J_URI="neo4j+s://YOUR_INSTANCE.databases.neo4j.io"
+export NEO4J_USER="neo4j"
+export NEO4J_PASSWORD="YOUR_PASSWORD"
+```
+
+Install the Neo4j driver (already in requirements):
+```bash
+pip install -r requirements.txt
+```
+
+Build the KG from a subset of chunks (default 200):
+```bash
+python src/step6_build_neo4j_kg.py --max-chunks 200
+```
+
+Notes:
+- Increase `--max-chunks` for a richer graph (costs more API usage).
+- This creates nodes for `Document`, `Chunk`, `Entity`, `Section`, and `Article`,
+  and relations like `MENTIONS`, `MENTIONS_SECTION`, `IN_ARTICLE`, `HAS_CHUNK`.
+
 ## Notes
 
 - The pipeline currently supports **Title 1** of the Education Code only.
