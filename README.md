@@ -109,6 +109,7 @@ python src/step6_build_neo4j_kg.py --max-chunks 200
 
 Notes:
 - Increase `--max-chunks` for a richer graph (costs more API usage).
+- You can use smaller values (e.g., 100) for faster demos.
 - This creates nodes for `Document`, `Chunk`, `Entity`, `Section`, and `Article`,
   and relations like `MENTIONS`, `MENTIONS_SECTION`, `IN_ARTICLE`, `HAS_CHUNK`.
 
