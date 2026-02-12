@@ -2,3 +2,4 @@ chromadb
 sentence-transformers
 openai
 neo4j
+scikit-learn

@@ -27,15 +27,32 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--collection", default=DEFAULT_COLLECTION)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--topics-path", default=None, help="Optional chunk topic mapping JSONL from step7")
     parser.add_argument("--reset", action="store_true", help="Delete existing collection before indexing")
     return parser.parse_args()
 
 
-def to_metadata(doc: Dict[str, Any]) -> Dict[str, Any]:
+def load_topics_map(path_str: str | None) -> Dict[str, Dict[str, Any]]:
+    if not path_str:
+        return {}
+    path = Path(path_str)
+    if not path.exists():
+        raise FileNotFoundError(f"Missing topics file: {path}")
+    out: Dict[str, Dict[str, Any]] = {}
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            row = json.loads(line)
+            cid = row.get("chunk_id")
+            if cid:
+                out[cid] = row
+    return out
+
+
+def to_metadata(doc: Dict[str, Any], topics_row: Dict[str, Any] | None = None) -> Dict[str, Any]:
     anchors = doc.get("anchors") or {}
     edcode_sections = anchors.get("edcode_sections") or []
     edcode_section = edcode_sections[0] if edcode_sections else None
-    return {
+    meta = {
         "doc_id": doc.get("doc_id"),
         "doc_type": doc.get("doc_type"),
         "rel_path": doc.get("rel_path"),
@@ -47,6 +64,11 @@ def to_metadata(doc: Dict[str, Any]) -> Dict[str, Any]:
         "article": doc.get("article"),
         "anchors_json": json.dumps(anchors, ensure_ascii=False),
     }
+    if topics_row:
+        meta["topic_level1"] = topics_row.get("topic_level1")
+        meta["topic_level2"] = topics_row.get("topic_level2")
+        meta["topic_path"] = topics_row.get("topic_path")
+    return meta
 
 
 def main() -> None:
@@ -57,6 +79,10 @@ def main() -> None:
 
     if not in_path.exists():
         raise FileNotFoundError(f"Missing input: {in_path}")
+
+    topics_map = load_topics_map(args.topics_path)
+    if topics_map:
+        print(f"Loaded topic mappings: {len(topics_map)}")
 
     client = chromadb.PersistentClient(path=str(chroma_dir))
 
@@ -84,7 +110,7 @@ def main() -> None:
             rec = json.loads(line)
             ids.append(rec["chunk_id"])
             docs.append(rec["text"])
-            metas.append(to_metadata(rec))
+            metas.append(to_metadata(rec, topics_map.get(rec["chunk_id"])))
 
             if len(ids) >= args.batch_size:
                 embeddings = model.encode(docs, batch_size=args.batch_size, normalize_embeddings=True)

@@ -29,6 +29,7 @@ DEFAULT_OPENAI_MODEL = "gpt-5-mini"
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build Neo4j knowledge graph from legal chunks")
     parser.add_argument("--in-path", default="data/chunks/chunks.jsonl")
+    parser.add_argument("--topics-path", default=None, help="Optional chunk topic mapping JSONL from step7")
     parser.add_argument("--max-chunks", type=int, default=200, help="Limit number of chunks for KG extraction")
     parser.add_argument("--openai-model", default=DEFAULT_OPENAI_MODEL)
     return parser.parse_args()
@@ -48,10 +49,27 @@ def ensure_constraints(driver) -> None:
         "CREATE CONSTRAINT kg_doc_id IF NOT EXISTS FOR (d:Document) REQUIRE d.doc_id IS UNIQUE",
         "CREATE CONSTRAINT kg_article_id IF NOT EXISTS FOR (a:Article) REQUIRE a.article IS UNIQUE",
         "CREATE CONSTRAINT kg_section_key IF NOT EXISTS FOR (s:Section) REQUIRE (s.number, s.doc_type) IS UNIQUE",
+        "CREATE CONSTRAINT kg_topic_path IF NOT EXISTS FOR (t:Topic) REQUIRE t.path IS UNIQUE",
     ]
     with driver.session() as session:
         for q in cypher:
             session.run(q)
+
+
+def load_topics_map(path_str: str | None) -> Dict[str, Dict[str, Any]]:
+    if not path_str:
+        return {}
+    p = Path(path_str)
+    if not p.exists():
+        raise FileNotFoundError(f"Missing topics file: {p}")
+    out: Dict[str, Dict[str, Any]] = {}
+    with p.open("r", encoding="utf-8") as f:
+        for line in f:
+            row = json.loads(line)
+            cid = row.get("chunk_id")
+            if cid:
+                out[cid] = row
+    return out
 
 
 def build_prompt(chunk: Dict[str, Any]) -> str:
@@ -84,7 +102,12 @@ def extract_kg(client: OpenAI, model: str, chunk: Dict[str, Any]) -> Dict[str, A
         return {"entities": [], "relations": []}
 
 
-def upsert_chunk_graph(driver, chunk: Dict[str, Any], kg: Dict[str, Any]) -> None:
+def upsert_chunk_graph(
+    driver,
+    chunk: Dict[str, Any],
+    kg: Dict[str, Any],
+    topic_row: Dict[str, Any] | None = None,
+) -> None:
     entities = kg.get("entities") or []
     relations = kg.get("relations") or []
 
@@ -132,6 +155,38 @@ def upsert_chunk_graph(driver, chunk: Dict[str, Any], kg: Dict[str, Any]) -> Non
                 article=article,
                 chunk_id=ch["chunk_id"],
             )
+
+        if topic_row:
+            topic_path = topic_row.get("topic_path")
+            t1 = topic_row.get("topic_level1")
+            t2 = topic_row.get("topic_level2")
+            if topic_path:
+                session.run(
+                    """
+                    MERGE (t:Topic {path: $topic_path})
+                    SET t.level1 = $t1,
+                        t.level2 = $t2
+                    MERGE (c:Chunk {chunk_id: $chunk_id})
+                    MERGE (c)-[:IN_TOPIC]->(t)
+                    """,
+                    topic_path=topic_path,
+                    t1=t1,
+                    t2=t2,
+                    chunk_id=ch["chunk_id"],
+                )
+                if t1 and t2:
+                    session.run(
+                        """
+                        MERGE (p:Topic {path: $parent_path})
+                        SET p.level1 = $t1,
+                            p.level2 = null
+                        MERGE (t:Topic {path: $topic_path})
+                        MERGE (t)-[:SUBTOPIC_OF]->(p)
+                        """,
+                        parent_path=t1,
+                        t1=t1,
+                        topic_path=topic_path,
+                    )
 
         for sec in ed_sections:
             session.run(
@@ -207,6 +262,10 @@ def main() -> None:
     if not in_path.exists():
         raise FileNotFoundError(f"Missing input: {in_path}")
 
+    topics_map = load_topics_map(args.topics_path)
+    if topics_map:
+        print(f"Loaded topic mappings: {len(topics_map)}")
+
     openai_client = OpenAI()
     driver = GraphDatabase.driver(uri, auth=(user, password))
 
@@ -219,7 +278,7 @@ def main() -> None:
                 break
             chunk = json.loads(line)
             kg = extract_kg(openai_client, args.openai_model, chunk)
-            upsert_chunk_graph(driver, chunk, kg)
+            upsert_chunk_graph(driver, chunk, kg, topics_map.get(chunk.get("chunk_id")))
             processed += 1
             if processed % 20 == 0:
                 print(f"Processed {processed} chunks...")
