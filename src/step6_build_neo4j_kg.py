@@ -16,6 +16,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List
 
@@ -32,6 +35,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--topics-path", default=None, help="Optional chunk topic mapping JSONL from step7")
     parser.add_argument("--max-chunks", type=int, default=200, help="Limit number of chunks for KG extraction")
     parser.add_argument("--openai-model", default=DEFAULT_OPENAI_MODEL)
+    parser.add_argument("--workers", type=int, default=1, help="Parallel OpenAI extraction workers (Neo4j writes stay serialized)")
+    parser.add_argument("--retries", type=int, default=3, help="Retries per chunk for API/transient failures")
+    parser.add_argument("--retry-backoff", type=float, default=2.0, help="Base seconds for exponential backoff")
+    parser.add_argument("--checkpoint-file", default=None, help="Optional JSON checkpoint path for resume support")
+    parser.add_argument("--resume", action="store_true", help="Resume from checkpoint-file if present")
+    parser.add_argument("--start-index", type=int, default=0, help="0-based start index in chunks.jsonl (ignored if --resume checkpoint is newer)")
     return parser.parse_args()
 
 
@@ -100,6 +109,51 @@ def extract_kg(client: OpenAI, model: str, chunk: Dict[str, Any]) -> Dict[str, A
         if start != -1 and end != -1 and end > start:
             return json.loads(raw[start:end + 1])
         return {"entities": [], "relations": []}
+
+
+def extract_kg_with_retry(
+    model: str,
+    chunk: Dict[str, Any],
+    retries: int,
+    retry_backoff: float,
+) -> Dict[str, Any]:
+    last_err: Exception | None = None
+    for attempt in range(retries + 1):
+        try:
+            # Per-call client avoids thread-sharing concerns.
+            client = OpenAI()
+            return extract_kg(client, model, chunk)
+        except Exception as e:
+            last_err = e
+            if attempt >= retries:
+                break
+            sleep_s = retry_backoff * (2 ** attempt)
+            time.sleep(sleep_s)
+    raise RuntimeError(f"KG extraction failed for chunk {chunk.get('chunk_id')}: {last_err}")
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def load_checkpoint(path_str: str | None) -> Dict[str, Any]:
+    if not path_str:
+        return {}
+    path = Path(path_str)
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def write_checkpoint(path_str: str | None, payload: Dict[str, Any]) -> None:
+    if not path_str:
+        return
+    path = Path(path_str)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
 def upsert_chunk_graph(
@@ -266,26 +320,101 @@ def main() -> None:
     if topics_map:
         print(f"Loaded topic mappings: {len(topics_map)}")
 
-    openai_client = OpenAI()
+    ckpt = load_checkpoint(args.checkpoint_file)
+    checkpoint_start = int(ckpt.get("next_index", 0)) if (args.resume and ckpt) else 0
+    start_index = max(int(args.start_index), checkpoint_start)
+    if args.checkpoint_file:
+        print(f"Checkpoint file: {args.checkpoint_file}")
+    if args.resume:
+        print(f"Resume enabled. Starting at chunk index: {start_index}")
+    elif start_index > 0:
+        print(f"Starting at chunk index: {start_index}")
+
     driver = GraphDatabase.driver(uri, auth=(user, password))
 
     ensure_constraints(driver)
 
-    processed = 0
+    # Load only the requested window of chunks so we can parallelize extraction.
+    selected_chunks: List[Dict[str, Any]] = []
     with in_path.open("r", encoding="utf-8") as f:
-        for line in f:
-            if processed >= args.max_chunks:
+        for idx, line in enumerate(f):
+            if idx < start_index:
+                continue
+            if len(selected_chunks) >= args.max_chunks:
                 break
-            chunk = json.loads(line)
-            kg = extract_kg(openai_client, args.openai_model, chunk)
-            upsert_chunk_graph(driver, chunk, kg, topics_map.get(chunk.get("chunk_id")))
-            processed += 1
-            if processed % 20 == 0:
-                print(f"Processed {processed} chunks...")
+            selected_chunks.append(json.loads(line))
+
+    processed = 0
+    failed = 0
+    workers = max(1, int(args.workers))
+
+    def checkpoint_update(done_count: int, fail_count: int, mode: str) -> None:
+        write_checkpoint(
+            args.checkpoint_file,
+            {
+                "mode": mode,
+                "started_at": ckpt.get("started_at") if ckpt else _utc_now_iso(),
+                "updated_at": _utc_now_iso(),
+                "start_index": start_index,
+                "next_index": start_index + done_count + fail_count,
+                "processed_success": done_count,
+                "processed_failed": fail_count,
+                "max_chunks_requested": int(args.max_chunks),
+                "workers": workers,
+                "openai_model": args.openai_model,
+            },
+        )
+
+    checkpoint_update(0, 0, "running")
+
+    if workers == 1:
+        for chunk in selected_chunks:
+            try:
+                kg = extract_kg_with_retry(
+                    args.openai_model,
+                    chunk,
+                    retries=args.retries,
+                    retry_backoff=args.retry_backoff,
+                )
+                upsert_chunk_graph(driver, chunk, kg, topics_map.get(chunk.get("chunk_id")))
+                processed += 1
+            except Exception as e:
+                failed += 1
+                print(f"Failed chunk {chunk.get('chunk_id')}: {e}")
+            checkpoint_update(processed, failed, "running")
+            if (processed + failed) % 20 == 0:
+                print(f"Processed {processed} chunks... Failed {failed}...")
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            future_map = {
+                pool.submit(
+                    extract_kg_with_retry,
+                    args.openai_model,
+                    chunk,
+                    args.retries,
+                    args.retry_backoff,
+                ): chunk
+                for chunk in selected_chunks
+            }
+            for fut in as_completed(future_map):
+                chunk = future_map[fut]
+                try:
+                    kg = fut.result()
+                    upsert_chunk_graph(driver, chunk, kg, topics_map.get(chunk.get("chunk_id")))
+                    processed += 1
+                except Exception as e:
+                    failed += 1
+                    print(f"Failed chunk {chunk.get('chunk_id')}: {e}")
+                checkpoint_update(processed, failed, "running")
+                if (processed + failed) % 20 == 0:
+                    print(f"Processed {processed} chunks... Failed {failed}...")
 
     driver.close()
+    checkpoint_update(processed, failed, "completed")
     print("✅ Step 6 complete")
     print(f"Chunks processed: {processed}")
+    if failed:
+        print(f"Chunks failed: {failed}")
 
 
 if __name__ == "__main__":
