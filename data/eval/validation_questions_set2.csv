@@ -1,0 +1,51 @@
+question_id,category,question,doc_type,article,edcode_section,expected_answer,notes
+Q051,constitution,How does the initiative power work?,ca_constitution,II,,,Second validation set
+Q052,constitution,How does the referendum process work?,ca_constitution,II,,,Second validation set
+Q053,constitution,How are state officers subject to recall?,ca_constitution,II,,,Second validation set
+Q054,constitution,How does a bill become law?,ca_constitution,IV,,,Second validation set
+Q055,constitution,When does an urgency statute take effect?,ca_constitution,IV,,,Second validation set
+Q056,constitution,How does the Governor's veto power work?,ca_constitution,V,,,Second validation set
+Q057,constitution,How is judicial power vested in California courts?,ca_constitution,VI,,,Second validation set
+Q058,constitution,What is the requirement for a free school in each district?,ca_constitution,IX,,,Second validation set
+Q059,constitution,How does the State School Fund work and how is it apportioned?,ca_constitution,IX,,,Second validation set
+Q060,constitution,What textbook responsibilities does the State Board of Education have?,ca_constitution,IX,,,Second validation set
+Q061,constitution,What rules govern water resources and beneficial use?,ca_constitution,X,,,Second validation set
+Q062,constitution,What powers do local governments or counties have?,ca_constitution,XI,,,Second validation set
+Q063,constitution,What limits apply to property taxes?,ca_constitution,XIII A,,,Second validation set
+Q064,constitution,How do appropriations limits on government work?,ca_constitution,XIII B,,,Second validation set
+Q065,constitution,When is voter approval required for local taxes?,ca_constitution,XIII C,,,Second validation set
+Q066,constitution,What rules apply to assessments or property-related fees?,ca_constitution,XIII D,,,Second validation set
+Q067,constitution,What restrictions apply to public finance or gifts of public funds?,ca_constitution,XVI,,,Second validation set
+Q068,constitution,How may motor vehicle revenues be used for transportation purposes?,ca_constitution,XIX,,,Second validation set
+Q069,constitution,How is redistricting authority structured?,ca_constitution,XXI,,,Second validation set
+Q070,constitution,When is voter approval required for low-rent housing projects?,ca_constitution,XXXIV,,,Second validation set
+Q071,edcode,How is the state's policy against discrimination in public education defined?,ca_education_code,,,,Second validation set
+Q072,edcode,What remedies or complaint mechanisms exist for unlawful discrimination in schools?,ca_education_code,,,,Second validation set
+Q073,edcode,What protections exist for student groups covered by educational equity provisions?,ca_education_code,,,,Second validation set
+Q074,edcode,How are English learner policy and support for immigrant children addressed?,ca_education_code,,,,Second validation set
+Q075,edcode,How do the EL Roadmap and statewide implementation planning work?,ca_education_code,,,,Second validation set
+Q076,edcode,What powers does the State Board of Education have to adopt rules for public schools?,ca_education_code,,,,Second validation set
+Q077,edcode,How do waivers work and who may grant them?,ca_education_code,,,,Second validation set
+Q078,edcode,What limits apply to waiver authority for the State Board or Department?,ca_education_code,,,,Second validation set
+Q079,edcode,How are regulations, rules, or guidance for school governance published?,ca_education_code,,,,Second validation set
+Q080,edcode,What is the Department of Education's general duty to administer or enforce education laws?,ca_education_code,,,,Second validation set
+Q081,edcode,Are Department of Education program guidelines mandatory or advisory?,ca_education_code,,,,Second validation set
+Q082,edcode,What duties do county superintendents have regarding supervision of schools?,ca_education_code,,,,Second validation set
+Q083,edcode,What fiscal oversight responsibilities do county superintendents have?,ca_education_code,,,,Second validation set
+Q084,edcode,How do school district organization or formation procedures work?,ca_education_code,,,,Second validation set
+Q085,edcode,What provisions deal with interdistrict or interagency cooperation in education?,ca_education_code,,,,Second validation set
+Q086,edcode,How does California participate in interstate education compacts or commissions?,ca_education_code,,,,Second validation set
+Q087,edcode,What responsibilities exist for state educational research, studies, or planning?,ca_education_code,,,,Second validation set
+Q088,edcode,How are instructional materials adoption and standards alignment handled?,ca_education_code,,,,Second validation set
+Q089,edcode,What responsibilities arise when state oversight of a local educational agency is triggered?,ca_education_code,,,,Second validation set
+Q090,edcode,How is accountability handled for fiscal distress or negative financial certifications?,ca_education_code,,,,Second validation set
+Q091,cross_source,How does the requirement for free schools connect to administrative and funding provisions?,,,,"",Second validation set
+Q092,cross_source,How do equal protection principles relate to anti-discrimination provisions in education?,,,,"",Second validation set
+Q093,cross_source,How does the creation of the State Board of Education compare with its rulemaking powers?,,,,"",Second validation set
+Q094,cross_source,How does the framework for the Superintendent of Public Instruction compare with the office's operational duties?,,,,"",Second validation set
+Q095,cross_source,How do protections for local government structure interact with county education oversight duties?,,,,"",Second validation set
+Q096,cross_source,How might tax limits affect the practical operation of education governance and funding rules?,,,,"",Second validation set
+Q097,cross_source,How do voter-control provisions over taxes and assessments relate to state education finance administration?,,,,"",Second validation set
+Q098,cross_source,How does the public finance framework relate to rules on educational expenditures or administration?,,,,"",Second validation set
+Q099,cross_source,How do education goals and equity provisions work together to support student rights?,,,,"",Second validation set
+Q100,cross_source,Which non-education constitutional provisions are most relevant when interpreting education governance statutes?,,,,"",Second validation set

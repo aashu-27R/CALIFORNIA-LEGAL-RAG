@@ -1,0 +1,25 @@
+{
+  "run_name": "validation_crossfix",
+  "run_timestamp_local": "20260413_135527",
+  "questions_csv": "data/eval/validation_questions.csv",
+  "question_count": 50,
+  "modes": [
+    "vector",
+    "kg"
+  ],
+  "top_k": 6,
+  "kg_expand_k": 8,
+  "openai_model": "gpt-5",
+  "results_csv": "data/eval/results/validation_crossfix_20260413_135527_results.csv",
+  "results_jsonl": "data/eval/results/validation_crossfix_20260413_135527_results.jsonl",
+  "per_mode": {
+    "vector": {
+      "rows": 50,
+      "errors": 0
+    },
+    "kg": {
+      "rows": 50,
+      "errors": 0
+    }
+  }
+}

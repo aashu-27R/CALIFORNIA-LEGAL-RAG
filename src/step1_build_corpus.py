@@ -29,6 +29,12 @@ try:
 except Exception:
     HAS_PYPDF = False
 
+try:
+    import pdfplumber
+    HAS_PDFPLUMBER = True
+except Exception:
+    HAS_PDFPLUMBER = False
+
 # ---- HTML support (optional) ----
 # pip install beautifulsoup4 lxml
 try:
@@ -39,6 +45,22 @@ except Exception:
 
 
 SUPPORTED_EXTS = {".txt", ".md", ".html", ".htm", ".pdf"}
+
+
+def resolve_root_folder() -> Path:
+    """
+    Prefer a dataset folder inside the repo, but fall back to the older
+    Downloads location so existing setups keep working.
+    """
+    candidates = [
+        Path("california dataset"),
+        Path("california_dataset"),
+        Path("/Users/aashrithasankineni/Downloads/california_dataset").expanduser(),
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
 
 
 def sha256_text(s: str) -> str:
@@ -80,9 +102,9 @@ def iter_files(root: Path) -> Iterable[Path]:
 
 def guess_doc_type_by_parent_folder(file_path: Path) -> str:
     parents = [p.name.lower() for p in file_path.parents]
-    if "california_constitution" in parents:
+    if "california_constitution" in parents or "california constitution" in parents:
         return "ca_constitution"
-    if "education_code" in parents:
+    if "education_code" in parents or "education code" in parents:
         return "ca_education_code"
     return "unknown_legal"
 
@@ -107,17 +129,27 @@ def read_html(path: Path) -> str:
 
 
 def read_pdf(path: Path) -> str:
-    if not HAS_PYPDF:
-        raise RuntimeError("PDF found but pypdf is not installed. Run: pip install pypdf")
+    if HAS_PYPDF:
+        reader = PdfReader(str(path))
+        parts = []
+        for page in reader.pages:
+            try:
+                parts.append(page.extract_text() or "")
+            except Exception:
+                parts.append("")
+        return "\n".join(parts)
 
-    reader = PdfReader(str(path))
-    parts = []
-    for page in reader.pages:
-        try:
-            parts.append(page.extract_text() or "")
-        except Exception:
-            parts.append("")
-    return "\n".join(parts)
+    if HAS_PDFPLUMBER:
+        parts = []
+        with pdfplumber.open(str(path)) as pdf:
+            for page in pdf.pages:
+                try:
+                    parts.append(page.extract_text() or "")
+                except Exception:
+                    parts.append("")
+        return "\n".join(parts)
+
+    raise RuntimeError("PDF found but neither pypdf nor pdfplumber is installed. Run: pip install pypdf")
 
 
 def make_record(path: Path, root: Path, raw_text: str) -> Dict[str, Any]:
@@ -144,8 +176,7 @@ def make_record(path: Path, root: Path, raw_text: str) -> Dict[str, Any]:
 
 
 def main():
-    # ✅ EDIT THIS to your folder from the screenshot
-    ROOT_FOLDER = Path("/Users/aashrithasankineni/Downloads/california_dataset").expanduser()
+    ROOT_FOLDER = resolve_root_folder()
 
     out_dir = Path("data/corpus")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -155,6 +186,8 @@ def main():
 
     scanned = 0
     saved = 0
+
+    print(f"Using dataset root: {ROOT_FOLDER.resolve()}")
 
     with docs_out.open("w", encoding="utf-8") as f_docs, err_out.open("w", encoding="utf-8") as f_err:
         for fp in iter_files(ROOT_FOLDER):

@@ -1,0 +1,51 @@
+question_id,category,question,doc_type,article,edcode_section,expected_answer,notes
+Q001,constitution,What does Article I say about due process and equal protection?,ca_constitution,I,,,From PDF provided by user
+Q002,constitution,What rights are listed in Article I Section 1?,ca_constitution,I,,,From PDF provided by user
+Q003,constitution,What does Article I say about freedom of speech and press?,ca_constitution,I,,,From PDF provided by user
+Q004,constitution,What does Article I say about freedom of religion?,ca_constitution,I,,,From PDF provided by user
+Q005,constitution,What does Article I say about search and seizure protections?,ca_constitution,I,,,From PDF provided by user
+Q006,constitution,"What does Article I say about self-incrimination and due process in criminal cases?",ca_constitution,I,,,From PDF provided by user
+Q007,constitution,What does Article I say about jury trial rights?,ca_constitution,I,,,From PDF provided by user
+Q008,constitution,What does Article I say about bail and excessive fines?,ca_constitution,I,,,From PDF provided by user
+Q009,constitution,What does Article I say about cruel or unusual punishment?,ca_constitution,I,,,From PDF provided by user
+Q010,constitution,What does Article I say about privileges or immunities?,ca_constitution,I,,,From PDF provided by user
+Q011,constitution,What does Article IX Section 1 say about education?,ca_constitution,IX,,,From PDF provided by user
+Q012,constitution,What does Article IX say about the Superintendent of Public Instruction?,ca_constitution,IX,,,From PDF provided by user
+Q013,constitution,What does Article IX say about appointment of deputy and associate superintendents?,ca_constitution,IX,,,From PDF provided by user
+Q014,constitution,What does Article IX say about county superintendents?,ca_constitution,IX,,,From PDF provided by user
+Q015,constitution,What does Article IX say about school district governance powers?,ca_constitution,IX,,,From PDF provided by user
+Q016,constitution,What does Article IX say about State Board of Education responsibilities?,ca_constitution,IX,,,From PDF provided by user
+Q017,constitution,What does Article IX say about textbook adoption?,ca_constitution,IX,,,From PDF provided by user
+Q018,constitution,What does Article IX say about funding/support for public education?,ca_constitution,IX,,,From PDF provided by user
+Q019,constitution,What does the Constitution say about public school support priorities?,ca_constitution,IX,,,From PDF provided by user
+Q020,constitution,"What constitutional provisions relate to local control versus state control in education?",ca_constitution,IX,,,From PDF provided by user
+Q021,edcode,What is the purpose and scope of California Education Code Title 1?,ca_education_code,,,,From PDF provided by user
+Q022,edcode,How does Title 1 define key terms used in administrative provisions?,ca_education_code,,,,From PDF provided by user
+Q023,edcode,What powers and duties are assigned to the State Board of Education in Title 1?,ca_education_code,,,,From PDF provided by user
+Q024,edcode,What powers and duties are assigned to the Superintendent of Public Instruction in Title 1?,ca_education_code,,,,From PDF provided by user
+Q025,edcode,What administrative powers are granted to the Department of Education under Title 1?,ca_education_code,,,,From PDF provided by user
+Q026,edcode,How does Title 1 address rulemaking or implementation authority?,ca_education_code,,,,From PDF provided by user
+Q027,edcode,What reporting duties appear in Title 1 for state education officials?,ca_education_code,,,,From PDF provided by user
+Q028,edcode,What enforcement or oversight mechanisms appear in Title 1?,ca_education_code,,,,From PDF provided by user
+Q029,edcode,How does Title 1 describe county board or county superintendent responsibilities?,ca_education_code,,,,From PDF provided by user
+Q030,edcode,What does Title 1 say about coordination between state and local education bodies?,ca_education_code,,,,From PDF provided by user
+Q031,edcode,What timelines or deadlines are specified in relevant Title 1 provisions?,ca_education_code,,,,From PDF provided by user
+Q032,edcode,Does Title 1 include exceptions or carve-outs to general administrative requirements?,ca_education_code,,,,From PDF provided by user
+Q033,edcode,What duties in Title 1 are mandatory versus discretionary?,ca_education_code,,,,From PDF provided by user
+Q034,edcode,What does Title 1 say about publication or transparency of education information?,ca_education_code,,,,From PDF provided by user
+Q035,edcode,What provisions in Title 1 involve interagency collaboration?,ca_education_code,,,,From PDF provided by user
+Q036,edcode,Which Title 1 sections most directly govern state-level education administration?,ca_education_code,,,,From PDF provided by user
+Q037,edcode,What does Title 1 say about educational policy implementation authority?,ca_education_code,,,,From PDF provided by user
+Q038,edcode,What legal constraints does Title 1 place on education authorities?,ca_education_code,,,,From PDF provided by user
+Q039,edcode,What powers in Title 1 are conditioned on statutory procedures?,ca_education_code,,,,From PDF provided by user
+Q040,edcode,What Title 1 provisions are most relevant to accountability?,ca_education_code,,,,From PDF provided by user
+Q041,cross_source,How does Article IX’s education mandate align with Title 1 administrative duties?,,,,"",From PDF provided by user
+Q042,cross_source,How do constitutional roles for SPI compare with Title 1 statutory duties?,,,,"",From PDF provided by user
+Q043,cross_source,How does constitutional State Board authority relate to Title 1 implementation powers?,,,,"",From PDF provided by user
+Q044,cross_source,How do county-level education roles differ between Article IX and Title 1?,,,,"",From PDF provided by user
+Q045,cross_source,What constitutional principles support Title 1 governance provisions?,,,,"",From PDF provided by user
+Q046,cross_source,Where do Title 1 provisions operationalize Article IX education goals?,,,,"",From PDF provided by user
+Q047,cross_source,"If Article IX sets broad authority, what specific Title 1 provisions carry it out?",,,,"",From PDF provided by user
+Q048,cross_source,How does constitutional educational purpose connect to statutory oversight mechanisms?,,,,"",From PDF provided by user
+Q049,cross_source,What similarities and differences exist between constitutional and statutory education governance language?,,,,"",From PDF provided by user
+Q050,cross_source,Which Title 1 sections are most relevant to constitutional rights-sensitive education administration?,,,,"",From PDF provided by user

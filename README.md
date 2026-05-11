@@ -126,6 +126,26 @@ KG-assisted answering (hybrid vector + graph expansion):
 python src/step5_rag_answer.py --query "What does Article IX say about education?" --doc-type ca_constitution --article IX --top-k 5 --use-kg --kg-expand-k 12
 ```
 
+### Validation Batch
+
+Run a 50-question validation set in vector-only, KG-only, or both modes:
+
+```bash
+mkdir -p data/eval
+
+python src/run_validation_batch.py \
+  --questions-csv data/eval/validation_questions.csv \
+  --modes both \
+  --top-k 3 \
+  --kg-expand-k 4 \
+  --openai-model gpt-5
+```
+
+Outputs are written to:
+- `data/eval/results/*_results.csv`
+- `data/eval/results/*_results.jsonl`
+- `data/eval/results/*_summary.json`
+
 ### Step 6 — Knowledge Graph (Neo4j)
 
 Set Neo4j env vars locally:
