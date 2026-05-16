@@ -1,0 +1,26 @@
+{
+  "folder": "data/eval/evidently_ready",
+  "notes": [
+    "Set 1 uses the later validation_crossfix run so retrieval settings align with set 2 (top_k=6, kg_expand_k=8).",
+    "Each CSV has one row per question for a single system and set.",
+    "JSON files contain the same rows as their CSV counterpart."
+  ],
+  "files": [
+    "chatgpt_responses_set1.csv",
+    "chatgpt_responses_set1.json",
+    "chatgpt_responses_set2.csv",
+    "chatgpt_responses_set2.json",
+    "claude_responses_set1.csv",
+    "claude_responses_set1.json",
+    "claude_responses_set2.csv",
+    "claude_responses_set2.json",
+    "our_model_vector_only_responses_set1.csv",
+    "our_model_vector_only_responses_set1.json",
+    "our_model_vector_only_responses_set2.csv",
+    "our_model_vector_only_responses_set2.json",
+    "our_model_vector_plus_kg_responses_set1.csv",
+    "our_model_vector_plus_kg_responses_set1.json",
+    "our_model_vector_plus_kg_responses_set2.csv",
+    "our_model_vector_plus_kg_responses_set2.json"
+  ]
+}
