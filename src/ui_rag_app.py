@@ -43,8 +43,10 @@ def run_query(
     doc_type: str | None,
     edcode_section: str | None,
     article: str | None,
+    doc_id: str | None,
     use_kg: bool,
     kg_expand_k: int,
+    kg_min_similarity: float,
 ) -> Tuple[str, List[Dict[str, Any]], str]:
     if not os.environ.get("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is not set.")
@@ -56,7 +58,7 @@ def run_query(
     embed_model = get_embed_model(embed_model_name)
     query_emb = embed_model.encode([query], normalize_embeddings=True)
 
-    where = build_where(doc_type, edcode_section, article)
+    where = build_where(doc_type, edcode_section, article, doc_id)
     results = collection.query(
         query_embeddings=query_emb,
         n_results=top_k,
@@ -69,7 +71,13 @@ def run_query(
     ids = results.get("ids", [[]])[0]
 
     if use_kg and ids:
-        extra_ids = kg_expand_chunk_ids(ids, kg_expand_k)
+        extra_ids = kg_expand_chunk_ids(
+            ids,
+            kg_expand_k,
+            query_embedding=query_emb,
+            collection=collection,
+            min_similarity=kg_min_similarity,
+        )
         if extra_ids:
             extra = collection.get(ids=extra_ids, include=["documents", "metadatas"])
             extra_docs = extra.get("documents", [])
@@ -137,6 +145,14 @@ def main() -> None:
         mode = st.radio("Retrieval Mode", ["Vector only", "Vector + KG"], index=1)
         top_k = st.slider("Top K", min_value=1, max_value=20, value=5)
         kg_expand_k = st.slider("KG Expand K", min_value=1, max_value=30, value=12)
+        kg_min_similarity = st.slider(
+            "KG Min Similarity",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.25,
+            step=0.05,
+            help="Minimum cosine similarity to the query for a KG-expanded chunk to be kept.",
+        )
 
         doc_type = st.selectbox(
             "Doc Type",
@@ -145,6 +161,16 @@ def main() -> None:
         )
         article = st.text_input("Article (optional, e.g., I, IX)", "")
         edcode_section = st.text_input("EdCode Section (optional)", "")
+        doc_id = st.text_input(
+            "Doc ID (optional)",
+            "",
+            help=(
+                "Filter to one document's chunks by doc_id. More reliable than "
+                "Article/EdCode Section filters, which only tag the chunk "
+                "containing the section-header text -- doc_id is set on every "
+                "chunk of a document regardless of anchor-extraction success."
+            ),
+        )
 
         chroma_dir = st.text_input("Chroma Dir", "data/chroma")
         collection_name = st.text_input("Collection", DEFAULT_COLLECTION)
@@ -169,8 +195,10 @@ def main() -> None:
                 doc_type=None if doc_type == "(all)" else doc_type,
                 edcode_section=edcode_section.strip() or None,
                 article=article.strip().upper() or None,
+                doc_id=doc_id.strip() or None,
                 use_kg=(mode == "Vector + KG"),
                 kg_expand_k=kg_expand_k,
+                kg_min_similarity=kg_min_similarity,
             )
 
             st.subheader("Answer")

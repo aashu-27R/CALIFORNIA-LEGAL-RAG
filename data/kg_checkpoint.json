@@ -1,0 +1,12 @@
+{
+  "mode": "completed",
+  "started_at": "2026-08-12T01:04:33.994133+00:00",
+  "updated_at": "2026-08-12T01:04:33.994133+00:00",
+  "start_index": 200,
+  "next_index": 3948,
+  "processed_success": 3747,
+  "processed_failed": 1,
+  "max_chunks_requested": 3748,
+  "workers": 3,
+  "openai_model": "gpt-5-mini"
+}

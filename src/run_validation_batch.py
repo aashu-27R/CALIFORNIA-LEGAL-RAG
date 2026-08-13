@@ -47,6 +47,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--modes", default="both", choices=sorted(VALID_MODES))
     parser.add_argument("--top-k", type=int, default=3)
     parser.add_argument("--kg-expand-k", type=int, default=4)
+    parser.add_argument(
+        "--kg-min-similarity",
+        type=float,
+        default=0.25,
+        help="Min cosine similarity (to the query) for a KG-expanded chunk to be kept, 0-1",
+    )
     parser.add_argument("--chroma-dir", default="data/chroma")
     parser.add_argument("--collection", default=DEFAULT_COLLECTION)
     parser.add_argument("--embed-model", default=DEFAULT_EMBED_MODEL)
@@ -109,8 +115,9 @@ def query_collection(
     doc_type: str | None,
     edcode_section: str | None,
     article: str | None,
+    doc_id: str | None = None,
 ) -> Tuple[List[str], List[Dict[str, Any]], List[str]]:
-    where = build_where(doc_type, edcode_section, article)
+    where = build_where(doc_type, edcode_section, article, doc_id)
     results = collection.query(
         query_embeddings=query_emb,
         n_results=top_k,
@@ -163,6 +170,8 @@ def retrieve_context(
     article: str | None,
     use_kg: bool,
     kg_expand_k: int,
+    kg_min_similarity: float = 0.25,
+    doc_id: str | None = None,
 ) -> Tuple[List[str], List[Dict[str, Any]], List[str]]:
     query_emb = embed_model.encode([question], normalize_embeddings=True)
     normalized_category = (category or "").strip().lower()
@@ -197,10 +206,17 @@ def retrieve_context(
             doc_type=doc_type,
             edcode_section=edcode_section,
             article=article,
+            doc_id=doc_id,
         )
 
     if use_kg and ids:
-        extra_ids = kg_expand_chunk_ids(ids, kg_expand_k)
+        extra_ids = kg_expand_chunk_ids(
+            ids,
+            kg_expand_k,
+            query_embedding=query_emb,
+            collection=collection,
+            min_similarity=kg_min_similarity,
+        )
         if extra_ids:
             extra = collection.get(ids=extra_ids, include=["documents", "metadatas"])
             extra_docs = extra.get("documents", [])
@@ -266,6 +282,8 @@ def retrieve_context_with_debug(
     article: str | None,
     use_kg: bool,
     kg_expand_k: int,
+    kg_min_similarity: float = 0.25,
+    doc_id: str | None = None,
 ) -> Tuple[List[str], List[Dict[str, Any]], List[str], Dict[str, Any]]:
     query_emb = embed_model.encode([question], normalize_embeddings=True)
     normalized_category = (category or "").strip().lower()
@@ -301,12 +319,19 @@ def retrieve_context_with_debug(
             doc_type=doc_type,
             edcode_section=edcode_section,
             article=article,
+            doc_id=doc_id,
         )
 
     seed_ids = list(ids)
     kg_extra_ids: List[str] = []
     if use_kg and ids:
-        kg_extra_ids = kg_expand_chunk_ids(ids, kg_expand_k)
+        kg_extra_ids = kg_expand_chunk_ids(
+            ids,
+            kg_expand_k,
+            query_embedding=query_emb,
+            collection=collection,
+            min_similarity=kg_min_similarity,
+        )
         if kg_extra_ids:
             extra = collection.get(ids=kg_extra_ids, include=["documents", "metadatas"])
             extra_docs = extra.get("documents", [])
@@ -361,6 +386,7 @@ def main() -> None:
         "modes": modes,
         "top_k": args.top_k,
         "kg_expand_k": args.kg_expand_k,
+        "kg_min_similarity": args.kg_min_similarity,
         "openai_model": args.openai_model,
         "results_csv": str(results_path),
         "results_jsonl": str(jsonl_path),
@@ -376,6 +402,7 @@ def main() -> None:
         doc_type = normalize_optional(question_row.get("doc_type"))
         edcode_section = normalize_optional(question_row.get("edcode_section"))
         article = normalize_optional(question_row.get("article"))
+        doc_id = normalize_optional(question_row.get("doc_id"))
 
         print(f"[{q_idx}/{len(questions)}] {question}")
 
@@ -391,8 +418,10 @@ def main() -> None:
                     doc_type=doc_type,
                     edcode_section=edcode_section,
                     article=article,
+                    doc_id=doc_id,
                     use_kg=use_kg,
                     kg_expand_k=args.kg_expand_k,
+                    kg_min_similarity=args.kg_min_similarity,
                 )
                 answer, sources, context = generate_answer(
                     openai_client=openai_client,
