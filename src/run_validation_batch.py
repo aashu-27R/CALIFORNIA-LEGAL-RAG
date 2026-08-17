@@ -22,7 +22,7 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import chromadb
 from openai import OpenAI
@@ -36,6 +36,7 @@ from step5_rag_answer import (
     format_context,
     kg_expand_chunk_ids,
 )
+from doc_resolver import build_resolution_maps, resolve_where_params
 
 
 VALID_MODES = {"vector", "kg", "both"}
@@ -59,6 +60,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--openai-model", default=DEFAULT_OPENAI_MODEL)
     parser.add_argument("--output-dir", default="data/eval/results")
     parser.add_argument("--run-name", default=None, help="Optional prefix for output files")
+    parser.add_argument(
+        "--chunks-path",
+        default="data/chunks/chunks.jsonl",
+        help="Used to auto-resolve article/edcode_section filters to doc_id(s) for complete recall",
+    )
+    parser.add_argument(
+        "--no-doc-id-resolve",
+        action="store_true",
+        help="Disable article/edcode_section -> doc_id auto-resolution; use the raw (incomplete) anchor filter instead",
+    )
     return parser.parse_args()
 
 
@@ -115,7 +126,7 @@ def query_collection(
     doc_type: str | None,
     edcode_section: str | None,
     article: str | None,
-    doc_id: str | None = None,
+    doc_id: str | List[str] | None = None,
 ) -> Tuple[List[str], List[Dict[str, Any]], List[str]]:
     where = build_where(doc_type, edcode_section, article, doc_id)
     results = collection.query(
@@ -283,43 +294,63 @@ def retrieve_context_with_debug(
     use_kg: bool,
     kg_expand_k: int,
     kg_min_similarity: float = 0.25,
-    doc_id: str | None = None,
+    doc_id: str | List[str] | None = None,
+    article_to_docs: Optional[Dict[str, Set[str]]] = None,
+    edcode_section_to_docs: Optional[Dict[str, Set[str]]] = None,
 ) -> Tuple[List[str], List[Dict[str, Any]], List[str], Dict[str, Any]]:
     query_emb = embed_model.encode([question], normalize_embeddings=True)
     normalized_category = (category or "").strip().lower()
     retrieval_strategy = "single_query"
+    resolve_maps_available = article_to_docs is not None and edcode_section_to_docs is not None
 
     if normalized_category == "cross_source":
         retrieval_strategy = "cross_source_split"
         constitution_k = max(1, top_k // 2)
         education_k = max(1, top_k - constitution_k)
 
+        c_article, _, c_doc_id = (
+            resolve_where_params("ca_constitution", article, None, article_to_docs, edcode_section_to_docs)
+            if resolve_maps_available and not doc_id
+            else (article, None, None)
+        )
         c_docs, c_metas, c_ids = query_collection(
             collection=collection,
             query_emb=query_emb,
             top_k=constitution_k,
             doc_type="ca_constitution",
             edcode_section=None,
-            article=article,
+            article=c_article,
+            doc_id=c_doc_id,
+        )
+        _, e_section, e_doc_id = (
+            resolve_where_params("ca_education_code", None, edcode_section, article_to_docs, edcode_section_to_docs)
+            if resolve_maps_available and not doc_id
+            else (None, edcode_section, None)
         )
         e_docs, e_metas, e_ids = query_collection(
             collection=collection,
             query_emb=query_emb,
             top_k=education_k,
             doc_type="ca_education_code",
-            edcode_section=edcode_section,
+            edcode_section=e_section,
             article=None,
+            doc_id=e_doc_id,
         )
         docs, metas, ids = dedupe_rows(c_docs + e_docs, c_metas + e_metas, c_ids + e_ids)
     else:
+        effective_article, effective_section, resolved_doc_id = (
+            resolve_where_params(doc_type, article, edcode_section, article_to_docs, edcode_section_to_docs)
+            if resolve_maps_available and not doc_id
+            else (article, edcode_section, None)
+        )
         docs, metas, ids = query_collection(
             collection=collection,
             query_emb=query_emb,
             top_k=top_k,
             doc_type=doc_type,
-            edcode_section=edcode_section,
-            article=article,
-            doc_id=doc_id,
+            edcode_section=effective_section,
+            article=effective_article,
+            doc_id=doc_id or resolved_doc_id,
         )
 
     seed_ids = list(ids)
@@ -372,6 +403,17 @@ def main() -> None:
     embed_model = SentenceTransformer(args.embed_model)
     openai_client = OpenAI()
 
+    article_to_docs: Optional[Dict[str, Set[str]]] = None
+    edcode_section_to_docs: Optional[Dict[str, Set[str]]] = None
+    if not args.no_doc_id_resolve:
+        chunks_path = Path(args.chunks_path)
+        if chunks_path.exists():
+            _, article_to_docs, edcode_section_to_docs = build_resolution_maps(chunks_path)
+            print(f"[doc_id auto-resolve] loaded {len(article_to_docs)} articles, "
+                  f"{len(edcode_section_to_docs)} Ed Code sections for complete-recall filtering")
+        else:
+            print(f"[doc_id auto-resolve] chunks file not found at {chunks_path}, skipping (raw anchor filters will be used)")
+
     results_path = output_dir / f"{run_prefix}_results.csv"
     jsonl_path = output_dir / f"{run_prefix}_results.jsonl"
     summary_path = output_dir / f"{run_prefix}_summary.json"
@@ -422,6 +464,8 @@ def main() -> None:
                     use_kg=use_kg,
                     kg_expand_k=args.kg_expand_k,
                     kg_min_similarity=args.kg_min_similarity,
+                    article_to_docs=article_to_docs,
+                    edcode_section_to_docs=edcode_section_to_docs,
                 )
                 answer, sources, context = generate_answer(
                     openai_client=openai_client,

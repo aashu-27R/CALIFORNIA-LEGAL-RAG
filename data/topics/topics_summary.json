@@ -1,0 +1,155 @@
+{
+  "level1_k": 4,
+  "level1_silhouette": 0.7234715021824423,
+  "level1_terms": {
+    "T00": [
+      "district",
+      "january",
+      "school",
+      "277",
+      "ch 277",
+      "277 sec",
+      "1996 ch",
+      "stats 1996"
+    ],
+    "T01": [
+      "1976 ch",
+      "ch 1010",
+      "stats 1976",
+      "1010",
+      "enacted stats",
+      "1976",
+      "enacted",
+      "stats"
+    ],
+    "T02": [
+      "member",
+      "retirement",
+      "benefit",
+      "service",
+      "allowance",
+      "beneficiary",
+      "annuity",
+      "section"
+    ],
+    "T03": [
+      "school",
+      "county",
+      "section",
+      "pursuant",
+      "superintendent",
+      "year",
+      "fiscal",
+      "subdivision"
+    ]
+  },
+  "level2": {
+    "T03": {
+      "k": 2,
+      "silhouette": 0.6518525288562174,
+      "terms": {
+        "T03/S00": [
+          "school",
+          "county",
+          "district",
+          "board",
+          "school district",
+          "superintendent",
+          "section",
+          "fiscal"
+        ],
+        "T03/S01": [
+          "program",
+          "children",
+          "department",
+          "services",
+          "preschool",
+          "section",
+          "local",
+          "state"
+        ]
+      }
+    },
+    "T02": {
+      "k": 2,
+      "silhouette": 0.8411365159977059,
+      "terms": {
+        "T02/S00": [
+          "member",
+          "service",
+          "retirement",
+          "section",
+          "benefit",
+          "program",
+          "ch",
+          "stats"
+        ],
+        "T02/S01": [
+          "annuity",
+          "beneficiary",
+          "option",
+          "participant",
+          "member",
+          "annuity beneficiary",
+          "change",
+          "election"
+        ]
+      }
+    },
+    "T01": {
+      "k": 2,
+      "silhouette": 0.7821301919978745,
+      "terms": {
+        "T01/S00": [
+          "school",
+          "education",
+          "code",
+          "education code",
+          "sec",
+          "added",
+          "added stats",
+          "article"
+        ],
+        "T01/S01": [
+          "library",
+          "county",
+          "board",
+          "district",
+          "shall",
+          "trustees",
+          "library district",
+          "library trustees"
+        ]
+      }
+    },
+    "T00": {
+      "k": 2,
+      "silhouette": 0.79871601843265,
+      "terms": {
+        "T00/S00": [
+          "school",
+          "district",
+          "board",
+          "school district",
+          "added",
+          "277 sec",
+          "277",
+          "1996"
+        ],
+        "T00/S01": [
+          "district",
+          "apportionment",
+          "acquiring district",
+          "acquiring",
+          "year",
+          "aided",
+          "state",
+          "state aided"
+        ]
+      }
+    }
+  },
+  "input_chunks": 3948,
+  "depth": 2,
+  "out_topics": "data\\topics\\chunk_topics.jsonl"
+}

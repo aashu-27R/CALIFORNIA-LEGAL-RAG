@@ -1,0 +1,26 @@
+{
+  "run_name": "validation_questions",
+  "run_timestamp_local": "20260813_151445",
+  "questions_csv": "data\\eval\\validation_questions.csv",
+  "question_count": 50,
+  "modes": [
+    "vector",
+    "kg"
+  ],
+  "top_k": 6,
+  "kg_expand_k": 8,
+  "kg_min_similarity": 0.25,
+  "openai_model": "gpt-5",
+  "results_csv": "data\\eval\\results\\validation_questions_20260813_151445_results.csv",
+  "results_jsonl": "data\\eval\\results\\validation_questions_20260813_151445_results.jsonl",
+  "per_mode": {
+    "vector": {
+      "rows": 50,
+      "errors": 0
+    },
+    "kg": {
+      "rows": 50,
+      "errors": 0
+    }
+  }
+}

@@ -23,6 +23,8 @@ from sentence_transformers import SentenceTransformer
 from openai import OpenAI
 from neo4j import GraphDatabase
 
+from doc_resolver import build_resolution_maps, resolve_doc_ids
+
 
 DEFAULT_EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 DEFAULT_COLLECTION = "ca_legal_chunks"
@@ -45,6 +47,16 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Filter to a single document's chunks by doc_id (reliable even when article/section anchors are missing)",
     )
+    parser.add_argument(
+        "--chunks-path",
+        default="data/chunks/chunks.jsonl",
+        help="Used to auto-resolve --article/--edcode-section to doc_id(s) for complete recall (see doc_resolver.py)",
+    )
+    parser.add_argument(
+        "--no-doc-id-resolve",
+        action="store_true",
+        help="Disable article/edcode_section -> doc_id auto-resolution; use the raw (incomplete) anchor filter instead",
+    )
     parser.add_argument("--use-kg", action="store_true", help="Expand retrieved chunks with Neo4j graph neighbors")
     parser.add_argument("--kg-expand-k", type=int, default=12, help="Max neighbor chunk ids to add from KG")
     parser.add_argument(
@@ -61,7 +73,7 @@ def build_where(
     doc_type: str | None,
     edcode_section: str | None,
     article: str | None,
-    doc_id: str | None = None,
+    doc_id: str | List[str] | None = None,
 ) -> Dict[str, Any] | None:
     clauses = []
     if doc_type:
@@ -76,7 +88,12 @@ def build_where(
         # sliding-window chunking artifact) -- doc_id is set on every chunk
         # of a document regardless of anchor-extraction success, so this
         # guarantees complete recall for "give me this whole document" needs.
-        clauses.append({"doc_id": doc_id})
+        # Accepts a single doc_id or a list (e.g. an edcode_section that
+        # spans more than one source file) via Chroma's $in operator.
+        if isinstance(doc_id, list):
+            clauses.append({"doc_id": {"$in": doc_id}})
+        else:
+            clauses.append({"doc_id": doc_id})
 
     if not clauses:
         return None
@@ -227,7 +244,30 @@ def main() -> None:
     embed_model = SentenceTransformer(args.embed_model)
     query_emb = embed_model.encode([args.query], normalize_embeddings=True)
 
-    where = build_where(args.doc_type, args.edcode_section, args.article, args.doc_id)
+    effective_doc_id = args.doc_id
+    effective_article = args.article
+    effective_edcode_section = args.edcode_section
+
+    if not args.no_doc_id_resolve and not args.doc_id and (args.article or args.edcode_section):
+        chunks_path = Path(args.chunks_path)
+        if chunks_path.exists():
+            _, article_to_docs, edcode_section_to_docs = build_resolution_maps(chunks_path)
+            resolved = resolve_doc_ids(
+                args.doc_type, args.article, args.edcode_section, article_to_docs, edcode_section_to_docs
+            )
+            if resolved:
+                # doc_id now fully captures the intended document(s); drop
+                # the raw article/edcode_section anchor filter so it can't
+                # narrow results back down to the single anchor-tagged
+                # chunk (the exact bug this resolution step exists to fix).
+                effective_doc_id = resolved
+                effective_article = None
+                effective_edcode_section = None
+                print(f"[doc_id auto-resolve] matched {len(resolved)} document(s) for complete recall")
+            else:
+                print("[doc_id auto-resolve] no match found; falling back to raw article/edcode_section filter")
+
+    where = build_where(args.doc_type, effective_edcode_section, effective_article, effective_doc_id)
 
     results = collection.query(
         query_embeddings=query_emb,

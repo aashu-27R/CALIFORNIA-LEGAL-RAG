@@ -9,4 +9,5 @@ data/processed/
 data/corpus/
 data/chunks/
 data/chroma/
+data/eval/judge_results_archive/
 *.log
